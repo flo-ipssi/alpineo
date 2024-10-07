@@ -1,0 +1,23 @@
+@import "~bootstrap/scss/bootstrap";
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f8f9fa;
+}
+
+#trailerModal {
+  .modal-body {
+    #trailer-container {
+      max-width: 100%;
+      height: auto;
+      min-height: 500px;
+      iframe {
+        min-height: 600px;
+      }
+    }
+  }
+  .close {
+    position: absolute;
+    right: 10px;
+  }
+}

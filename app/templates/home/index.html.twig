@@ -1,0 +1,166 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Films{% endblock %}
+
+{% block body %}
+
+	<div class="example-wrapper">
+		<section class="jumbotron text-center">
+			<div class="container">
+				<h1 class="jumbotron-heading">Film par genre</h1>
+				<p>
+					<button class="btn btn-primary my-2 filter-btn" data-genre="28">Action</button>
+					<button class="btn btn-secondary my-2 filter-btn" data-genre="16">Animation</button>
+					<button class="btn btn-success my-2 filter-btn" data-genre="10749">Romance</button>
+					<button class="btn btn-info my-2 filter-btn" data-genre="35">Comedie</button>
+					<button class="btn btn-warning my-2 filter-btn" data-genre="18">Drama</button>
+				</p>
+                <div id="loader" class="text-center" style="display: none;">
+                    <div class="spinner-border" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+			</div>
+		</section>
+
+		<section id="movies-container">
+			<div class="row">
+				{% if movies is not empty %}
+					{% for movie in movies %}
+						<div class="col-md-2 movie-item">
+							<div class="card mb-4 box-shadow">
+								<img class="card-img-top" src="https://image.tmdb.org/t/p/w200{{ movie.poster_path }}" alt="{{ movie.title }} Poster"
+									style="height: 225px; width: 100%; display: block;">
+								<div class="card-body">
+									<h3>{{ movie.title }}</h3>
+									<p class="card-text text-truncate">{{ movie.overview }}</p>
+									<div class="d-flex justify-content-between align-items-center">
+                                    <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#trailerModal" data-movie-id="{{ movie.id }}">
+                                        Voir 
+                                    </button>
+                                    <small class="text-muted">{{ movie.release_date }}</small>
+                                </div>
+								</div>
+							</div>
+						</div>
+					{% endfor %}
+				{% else %}
+					<p>Aucuns films trouvés.</p>
+				{% endif %}
+			</div>
+		</section>
+	</div>
+
+    <!-- Modal for trailer -->
+    <div class="modal fade" id="trailerModal" tabindex="-1" role="dialog" aria-labelledby="trailerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="trailerModalLabel">Trailer</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="trailer-loader" class="text-center" style="display: none;">
+                        <div class="spinner-border" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                    <div id="trailer-container" class="embed-responsive embed-responsive-16by9 m-auto text-center ">
+                        <iframe class="embed-responsive-item" id="trailer-video" src="" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+	<script>
+        function attachTrailerEvents() {
+        document.querySelectorAll('.btn-primary').forEach(button => {
+            button.addEventListener('click', function () {
+                const movieId = this.getAttribute('data-movie-id');
+                const loader = document.getElementById('trailer-loader');
+                const trailerContainer = document.getElementById('trailer-container');
+                const trailerVideo = document.getElementById('trailer-video');
+
+                loader.style.display = 'block';
+                trailerContainer.style.display = 'none';
+                fetch(`/movies/trailer/${movieId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const trailerUrl = `https://www.youtube.com/embed/${data.trailerKey}`;
+                        document.getElementById('trailer-video').src = trailerUrl;
+                        loader.style.display = 'none';
+                        trailerContainer.style.display = 'block';
+                    })
+                    .catch(() => {
+                        loader.style.display = 'none';
+                        alert("Une erreur est survenue lors du chargement de la bande-annonce.");
+                    });
+            });
+        });
+    }
+
+		document.querySelectorAll('.filter-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const genreId = this.dataset.genre;
+                const loader = document.getElementById('loader');
+                const container = document.querySelector('#movies-container .row');
+
+                loader.style.display = 'block';
+                container.innerHTML = '';
+                fetch(`/movies/filter-by-genre?genre=${genreId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        container.innerHTML = ''; 
+                        data.movies.forEach(movie => {
+                            const movieHtml = `
+                                <div class="col-md-2 movie-item">
+                                    <div class="card mb-4 box-shadow">
+                                        <img class="card-img-top" src="https://image.tmdb.org/t/p/w200${movie.poster_path}" alt="${movie.title} Poster" style="height: 225px; width: 100%; display: block;">
+                                        <div class="card-body">
+                                            <h3>${movie.title}</h3>
+                                            <p class="card-text text-truncate">${movie.overview}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#trailerModal" data-movie-id="${movie.id}">
+                                                    Voir
+                                                </button>
+                                                <small class="text-muted">${movie.release_date}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            container.insertAdjacentHTML('beforeend', movieHtml);
+                        });
+                        loader.style.display = 'none';
+                        attachTrailerEvents();
+                    })
+                    .catch(() => {
+                        loader.style.display = 'none';
+                        container.innerHTML = '<p>Une erreur est survenue lors du chargement des films.</p>';
+                    });;
+            });
+        });
+
+        attachTrailerEvents();
+        
+        document.querySelectorAll('.btn-primary').forEach(button => {
+            button.addEventListener('click', function () {
+                const movieId = this.getAttribute('data-movie-id');
+
+                fetch(`/movies/trailer/${movieId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const trailerUrl = `https://www.youtube.com/embed/${data.trailerKey}`;
+                        document.getElementById('trailer-video').src = trailerUrl;
+                    });
+            });
+        });
+
+        $('#trailerModal').on('hidden.bs.modal', function (e) {
+            document.getElementById('trailer-video').src = '';
+        }); 
+	</script>
+
+{% endblock %}
