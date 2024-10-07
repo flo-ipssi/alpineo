@@ -24,6 +24,11 @@ composer install
 npm install
 ```
 
+### Chargez votre clé d'api TMDB dans le fichier .env
+
+```bash
+TMDB_API_KEY=YOUR_API_KEY
+```
 ## Utilisation
 
 ### Lancer l'application
